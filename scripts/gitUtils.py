@@ -1,6 +1,5 @@
 import pygit2 as git
 import logging
-import csv
 import requests
 
 class GitUtils:
