@@ -1,5 +1,6 @@
 # Secret resources (Keys, addresses)
 secrets/*.json
+secrets/*.cfg
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

@@ -6,7 +6,7 @@ from pathlib import Path
 
 myObj = GitUtils
 
-START_DATE = '01-22-2020'
+START_DATE = '03-24-2020'  # Thats the day when the schema changed closer to the final version
 END_DATE = datetime.datetime.now() - datetime.timedelta(days=1)
 
 Date = datetime.datetime.strptime(START_DATE, "%m-%d-%Y")
