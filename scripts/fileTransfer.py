@@ -13,12 +13,17 @@ os.environ['AWS_ACCESS_KEY_ID'] = config.get('AWS','AWS_ACCESS_KEY_ID')
 os.environ['AWS_SECRET_ACCESS_KEY'] = config.get('AWS','AWS_SECRET_ACCESS_KEY')
 
 def upload_file(file_name, bucket, object_name=None):
-    """Upload a file to an S3 bucket
-
-    :param file_name: File to upload
-    :param bucket: Bucket to upload to
-    :param object_name: S3 object name. If not specified then file_name is used
-    :return: True if file was uploaded, else False
+    """
+        Description: This function uploads a file to an S3 bucket
+        
+        Parameter:
+            file_name: File to upload
+            bucket: Bucket to upload to
+            object_name: S3 object name. If not specified then file_name is used
+        
+        Return:
+            True if file was uploaded, else False
+            
     """
 
     # If S3 object_name was not specified, use file_name
