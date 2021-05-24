@@ -6,11 +6,11 @@ from airflow.operators.postgres_operator import PostgresOperator
 from airflow.operators.python_operator import PythonOperator
 from airflow.operators import (StageToRedshiftOperator, LoadFactOperator,
                                 LoadDimensionOperator, DataQualityOperator, CreateTablesOperator)
-from helpers import SqlQueries
+from plugins.helpers import SqlQueries
 
 default_args = {
     'owner': 'Leo Arruda',
-    'start_date': datetime(2021, 4, 12),
+    'start_date': datetime(2020, 4, 23),
     'depends_on_past': False,
     'email_on_retry': False,
     'retries': 3,

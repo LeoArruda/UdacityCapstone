@@ -13,7 +13,7 @@ class DataIngestionApp:
                 .appName("parquet_example") \
                 .getOrCreate()
 
-public class VerboseRealisticDataIngestionApp {
+class VerboseRealisticDataIngestionApp {
   private static Logger log =
       LoggerFactory.getLogger(VerboseRealisticDataIngestionApp.class);
 

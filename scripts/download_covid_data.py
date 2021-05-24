@@ -1,7 +1,17 @@
-from .gitUtils import GitUtils
 import datetime
 from pathlib import Path
 import logging
+import requests
+
+
+def download_file(url='https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_daily_reports/', filename=None):
+        try:
+            req = requests.get(url+filename)
+            url_content = req.content
+            return url_content
+        except Exception as e:
+            logging.error(e)
+
 
 def download_covid_data(start_date='03-24-2020', end_date=None):
     """
@@ -9,8 +19,8 @@ def download_covid_data(start_date='03-24-2020', end_date=None):
                     and stores into ~/data folder
         
         Parameters:
-            start_date  : the initial date to start.  Default='03-24-2020'
-            end_date    : the final date to download. Default=**Last Day**
+            start_date  : the initial date to start Format=MM-dd-yyyy.  Default='03-24-2020'  
+            end_date    : the final date to download.                   Default=**Last Day**
         
         Returns:
             downloaded_files[] : An array list with all downloaded files
@@ -30,7 +40,7 @@ def download_covid_data(start_date='03-24-2020', end_date=None):
     while date_to_process.date() <= end_date.date():
         filename='{date.month:02}-{date.day:02}-{date.year}.csv'.format(date=date_to_process)
         #print('Processing file: {}'.format(filename))
-        jhu_csv = GitUtils.downloadFile(filename=filename)
+        jhu_csv = download_file(filename=filename)
         data_folder = Path('data/')
         dataset = data_folder / filename
         try:

@@ -9,8 +9,8 @@ from botocore.exceptions import ParamValidationError
 config = configparser.ConfigParser()
 config.read('secrets/secret.cfg')
 
-os.environ['AWS_ACCESS_KEY_ID'] = config.get('AWS','AWS_ACCESS_KEY_ID')
-os.environ['AWS_SECRET_ACCESS_KEY'] = config.get('AWS','AWS_SECRET_ACCESS_KEY')
+# os.environ['AWS_ACCESS_KEY_ID'] = config.get('AWS','AWS_ACCESS_KEY_ID')
+# os.environ['AWS_SECRET_ACCESS_KEY'] = config.get('AWS','AWS_SECRET_ACCESS_KEY')
 
 def upload_file(file_name, bucket, object_name=None):
     """

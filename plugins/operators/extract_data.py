@@ -31,15 +31,6 @@ class ExtractDataToS3tOperator(BaseOperator):
         rendered_key = self.s3_key.format(**context)
         self.log.info(f"Rendered Key: {rendered_key}")
         s3_path = f"s3://{self.s3_bucket}/{rendered_key}"
-
-        formatted_sql = StageToRedshiftOperator.copy_sql.format(
-            self.table,
-            s3_path,
-            credentials.access_key,
-            credentials.secret_key,
-            self.region,
-            self.extra_params
-        )
         
         self.log.info(f"Executing query to copy data from '{s3_path}' to '{self.table}'")
         redshift.run(formatted_sql)

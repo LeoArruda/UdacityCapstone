@@ -2,8 +2,7 @@ from airflow import DAG
 from airflow.operators.python_operator import PythonOperator
 from airflow.models import BaseOperator
 from airflow.utils.decorators import apply_defaults
-
-from my_script import my_python_function
+from scripts import download_covid_data, s3_file_transfer
 
 ###
 # To do: export PYTHONPATH=/path/to/my/scripts/dir/:$PYTHONPATH
@@ -16,7 +15,7 @@ class DownloadAllJHUCovidDataOperator(PythonOperator):
     def __init__(self,
                  task_id='Download_All_JHU_Covid_Data',
                  provide_context=False,
-                 python_callable=my_python_function,
+                 python_callable=download_covid_data,
                  *args, **kwargs):
 
         super(DownloadAllJHUCovidDataOperator, self).__init__(*args, **kwargs)
@@ -26,7 +25,7 @@ class DownloadAllJHUCovidDataOperator(PythonOperator):
 
     def execute(self, context):
         dag = DAG('DownloadAllJHUCovidData')
-        self.log.info(f"Loading dimension table {self.table}")
+        self.log.info(f"Downloading JHU Covid Dataset.")
         PythonOperator(dag=dag,
                task_id=self.task_id,
                provide_context=self.provide_context,

@@ -3,11 +3,13 @@ from operators.load_fact import LoadFactOperator
 from operators.load_dimension import LoadDimensionOperator
 from operators.data_quality import DataQualityOperator
 from operators.create_tables import CreateTablesOperator
+from operators.download_covid_dataset import DownloadAllJHUCovidDataOperator
 
 __all__ = [
     'StageToRedshiftOperator',
     'LoadFactOperator',
     'LoadDimensionOperator',
     'DataQualityOperator',
-    'CreateTablesOperator'
+    'CreateTablesOperator',
+    'DownloadAllJHUCovidDataOperator'
 ]
