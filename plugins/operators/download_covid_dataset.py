@@ -1,6 +1,5 @@
 from airflow import DAG
 from airflow.operators.python_operator import PythonOperator
-from airflow.models import BaseOperator
 from airflow.utils.decorators import apply_defaults
 from scripts import download_covid_data, s3_file_transfer
 

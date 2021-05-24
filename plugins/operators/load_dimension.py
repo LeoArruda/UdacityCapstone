@@ -3,7 +3,7 @@ from airflow.models import BaseOperator
 from airflow.utils.decorators import apply_defaults
 
 class LoadDimensionOperator(BaseOperator):
-    ui_color = '#80BD9E'
+    ui_color = '#f5f500'
 
     insert_sql = """
         INSERT INTO {}

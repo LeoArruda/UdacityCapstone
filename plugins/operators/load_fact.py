@@ -3,10 +3,10 @@ from airflow.models import BaseOperator
 from airflow.utils.decorators import apply_defaults
 
 class LoadFactOperator(BaseOperator):
-    ui_color = '#F98866'
+    ui_color = '#00f5e5'
     
     insert_sql = """
-        INSERT INTO {}
+        INSERT INTO {} (combined_key, datekey, deaths, recovered, active, incidence_rate, case_fatality_ratio )
         {};
     """
 

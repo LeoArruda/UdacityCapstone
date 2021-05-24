@@ -1,9 +1,12 @@
-from operators.stage_redshift import StageToRedshiftOperator
-from operators.load_fact import LoadFactOperator
-from operators.load_dimension import LoadDimensionOperator
-from operators.data_quality import DataQualityOperator
-from operators.create_tables import CreateTablesOperator
-from operators.download_covid_dataset import DownloadAllJHUCovidDataOperator
+from . import StageToRedshiftOperator
+from . import LoadFactOperator
+from . import LoadDimensionOperator
+from . import DataQualityOperator
+from . import CreateTablesOperator
+from . import DownloadAllJHUCovidDataOperator
+from . import CalculateNewCasesOperator
+
+
 
 __all__ = [
     'StageToRedshiftOperator',
@@ -11,5 +14,6 @@ __all__ = [
     'LoadDimensionOperator',
     'DataQualityOperator',
     'CreateTablesOperator',
-    'DownloadAllJHUCovidDataOperator'
+    'DownloadAllJHUCovidDataOperator',
+    'CalculateNewCasesOperator'
 ]

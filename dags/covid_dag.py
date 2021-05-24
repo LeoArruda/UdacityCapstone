@@ -1,12 +1,11 @@
 from datetime import datetime, timedelta
-import os
 from airflow import DAG
 from airflow.operators.dummy_operator import DummyOperator
 from airflow.operators.postgres_operator import PostgresOperator
 from airflow.operators.python_operator import PythonOperator
-from airflow.operators import (StageToRedshiftOperator, LoadFactOperator,
-                                LoadDimensionOperator, DataQualityOperator, CreateTablesOperator)
-from plugins.helpers import SqlQueries
+
+from plugins.operators import (StageToRedshiftOperator, LoadFactOperator, LoadDimensionOperator, DataQualityOperator, CreateTablesOperator)
+from plugins.helpers.sql_queries import SqlQueries
 
 default_args = {
     'owner': 'Leo Arruda',
@@ -33,73 +32,42 @@ create_redshift_tables = CreateTablesOperator(
     redshift_conn_id="redshift"
 )
 
-stage_events_to_redshift = StageToRedshiftOperator(
-    task_id='Stage_events',
+staging_covid_to_redshift = StageToRedshiftOperator(
+    task_id='Staging_covid',
     dag=dag,
-    table="staging_events",
+    table="staging_covid",
     redshift_conn_id="redshift",
     aws_credentials_id="aws_credentials",
-    s3_bucket="udacity-dend",
-    s3_key="log_data",
+    s3_bucket="udacity-data-lake",
+    s3_key="covid19/staging/",
     region="us-west-2",
-    extra_params="FORMAT AS JSON 's3://udacity-dend/log_json_path.json'"
+    extra_params="delimiter ';'"
 )
 
-stage_songs_to_redshift = StageToRedshiftOperator(
-    task_id='Stage_songs',
+load_location_dimension_table = LoadDimensionOperator(
+    task_id='Load_location_dimension_table',
     dag=dag,
-    table="staging_songs",
-    redshift_conn_id="redshift",
-    aws_credentials_id="aws_credentials",
-    s3_bucket="udacity-dend",
-    s3_key="song_data",
-    region="us-west-2",
-    extra_params="JSON 'auto' COMPUPDATE OFF"
-)
-
-load_songplays_table = LoadFactOperator(
-    task_id='Load_songplays_fact_table',
-    dag=dag,
-    table='songplays',
-    redshift_conn_id="redshift",
-    load_sql_stmt=SqlQueries.songplay_table_insert
-)
-
-load_user_dimension_table = LoadDimensionOperator(
-    task_id='Load_user_dim_table',
-    dag=dag,
-    table='users',
+    table='dim_location',
     redshift_conn_id="redshift",
     truncate_table=True,
-    load_sql_stmt=SqlQueries.user_table_insert
+    load_sql_stmt=SqlQueries.location_table_insert
 )
 
-load_song_dimension_table = LoadDimensionOperator(
-    task_id='Load_song_dim_table',
+load_date_dimension_table = LoadDimensionOperator(
+    task_id='Load_date_dimension_table',
     dag=dag,
-    table='songs',
+    table='dim_date',
     redshift_conn_id="redshift",
     truncate_table=True,
-    load_sql_stmt=SqlQueries.song_table_insert
+    load_sql_stmt=SqlQueries.date_table_insert
 )
 
-load_artist_dimension_table = LoadDimensionOperator(
-    task_id='Load_artist_dim_table',
+load_covid_cases_fact_table = LoadFactOperator(
+    task_id='Load_covid_cases_fact_table',
     dag=dag,
-    table='artists',
+    table='fact_covid_cases',
     redshift_conn_id="redshift",
-    truncate_table=True,
-    load_sql_stmt=SqlQueries.artist_table_insert
-)
-
-load_time_dimension_table = LoadDimensionOperator(
-    task_id='Load_time_dim_table',
-    dag=dag,
-    table='time',
-    redshift_conn_id="redshift",
-    truncate_table=True,
-    load_sql_stmt=SqlQueries.time_table_insert
-
+    load_sql_stmt=SqlQueries.covid_cases_insert
 )
 
 run_quality_checks = DataQualityOperator(
@@ -126,10 +94,12 @@ end_operator = DummyOperator(task_id='Stop_execution',  dag=dag)
 
 start_operator >> create_redshift_tables
 
-create_redshift_tables >> [stage_events_to_redshift, stage_songs_to_redshift]
+create_redshift_tables >> staging_covid_to_redshift
 
-[stage_events_to_redshift, stage_songs_to_redshift] >> load_songplays_table
+staging_covid_to_redshift >> [load_date_dimension_table, load_location_dimension_table]
 
-load_songplays_table >> [load_user_dimension_table, load_song_dimension_table, load_artist_dimension_table, load_time_dimension_table ] >> run_quality_checks
+[load_date_dimension_table, load_location_dimension_table] >> load_covid_cases_fact_table
 
-run_quality_checks >> end_operator
+load_covid_cases_fact_table >> end_operator
+
+#run_quality_checks >> end_operator

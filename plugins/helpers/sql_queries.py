@@ -83,7 +83,7 @@ class SqlQueries:
     """)
 
     # Populate Dimension table Date
-    time_table_insert = ("""
+    date_table_insert = ("""
         SELECT DISTINCT cast(to_char(cast("date" as date), 'YYYYMMDD') as int) as Datekey,
 				cast(to_char(cast("date" as date), 'YYYY') as int) as year,
                 cast(to_char(cast("date" as date), 'MM') as int) as month,
@@ -113,3 +113,36 @@ class SqlQueries:
         FROM staging_covid
         ORDER BY date ASC
     """)
+
+    # Calculate Incidence of new deaths and recovered
+    # The formula is:   new_deaths = current_record.deaths - previous_record.deaths
+    #                   new_recovered = current_record.recovered - previous_record.recovered
+    calculate_new_cases = ("""
+        UPDATE fact_covid_cases 
+        SET new_deaths = CalculatedCovid._newDeaths, 
+            new_recovered = CalculatedCovid._newRecovered 
+        FROM (
+            SELECT
+            id, 
+            (deaths - LAG(deaths, 1) OVER (ORDER BY  combined_key, datekey, id)) AS [newDeaths],
+            CASE WHEN newDeaths > -1 THEN newDeaths ELSE 0 END as _newDeaths, 
+            (recovered - LAG(recovered, 1) OVER (ORDER BY combined_key, datekey, id)) AS [newRecovered],
+            CASE WHEN newRecovered > -1 THEN newRecovered ELSE 0 END as _newRecovered
+            FROM fact_covid_cases
+            ORDER BY combined_key,datekey,  id) AS CalculatedCovid
+        WHERE 
+            fact_covid_cases.ID = CalculatedCovid.ID
+    """)
+
+    transform_new_deaths = ("""
+        UPDATE fact_covid_cases 
+        SET new_deaths = 0
+        WHERE new_deaths < 0
+    """)
+
+    transform_new_recovered = ("""
+        UPDATE fact_covid_cases 
+        SET new_recovered = 0
+        WHERE new_recovered < 0
+    """)
+
