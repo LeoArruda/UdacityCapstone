@@ -33,4 +33,4 @@ class ExtractDataToS3tOperator(BaseOperator):
         s3_path = f"s3://{self.s3_bucket}/{rendered_key}"
         
         self.log.info(f"Executing query to copy data from '{s3_path}' to '{self.table}'")
-        redshift.run(formatted_sql)
+        #redshift.run(formatted_sql)

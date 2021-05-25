@@ -16,13 +16,13 @@ config.read('secrets/secret.cfg')
 
 # s3_file_transfer.upload_file(file_name=filename, bucket=bucket_name, object_name=destination)
 
-with os.scandir('out/landed/') as it:
+with os.scandir('out/processed/') as it:
     for entry in it:
         if entry.name.endswith(".csv") and entry.is_file():
             print(entry.name, entry.path)
             # print(path_in_str)
             file=str(entry.name)
-            filename = 'out/landed/{}'.format(file)
+            filename = 'out/processed/{}'.format(file)
             destination = 'covid19/staging/{}'.format(file)
             bucket_name = 'udacity-data-lake'
             s3_file_transfer.upload_file(file_name=filename, bucket=bucket_name, object_name=destination)
