@@ -10,7 +10,7 @@ class LocalToS3Operator(BaseOperator):
     Operator that generates parquet files from raw data.
     """
 
-    ui_color = '#218251'
+    ui_color = '#f5c105'
 
     @apply_defaults
     def __init__(self,

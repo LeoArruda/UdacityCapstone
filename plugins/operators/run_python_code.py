@@ -7,7 +7,7 @@ from scripts import download_covid_data, s3_file_transfer
 # To do: export PYTHONPATH=/path/to/my/scripts/dir/:$PYTHONPATH
 ###
 
-class DownloadAllJHUCovidDataOperator(PythonOperator):
+class RunPythonCodeDataOperator(PythonOperator):
     ui_color = '#80BD9E'
 
     @apply_defaults
@@ -17,7 +17,7 @@ class DownloadAllJHUCovidDataOperator(PythonOperator):
                  python_callable=download_covid_data,
                  *args, **kwargs):
 
-        super(DownloadAllJHUCovidDataOperator, self).__init__(*args, **kwargs)
+        super(RunPythonCodeDataOperator, self).__init__(*args, **kwargs)
         self.task_id = task_id
         self.provide_context = provide_context
         self.python_callable = python_callable
