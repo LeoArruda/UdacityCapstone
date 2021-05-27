@@ -1,105 +1,143 @@
-from datetime import datetime, timedelta
+
+# pylint: disable=missing-function-docstring
+
+"""
+### ETL DAG Tutorial Documentation
+This ETL DAG is compatible with Airflow 1.10.x (specifically tested with 1.10.12) and is referenced
+as part of the documentation that goes along with the Airflow Functional DAG tutorial located
+[here](https://airflow.apache.org/tutorial_decorated_flows.html)
+"""
+# [START tutorial]
+# [START import_module]
+import json
+import os
+import datetime
+from textwrap import dedent
+
+# The DAG object; we'll need this to instantiate a DAG
 from airflow import DAG
-from airflow.operators.dummy_operator import DummyOperator
-from airflow.operators.postgres_operator import PostgresOperator
-from airflow.operators.python_operator import PythonOperator
 
-from plugins.operators import (StageToRedshiftOperator, LoadFactOperator, LoadDimensionOperator, DataQualityOperator, CreateTablesOperator)
-from plugins.helpers.sql_queries import SqlQueries
+# Operators; we need this to operate!
+from airflow.operators.python import PythonOperator
+from airflow.utils.dates import days_ago
+from scripts import download_covid_data, early_transformation, s3_file_transfer
 
+# [END import_module]
+
+# [START default_args]
+# These args will get passed on to each operator
+# You can override them on a per-task basis during operator initialization
 default_args = {
     'owner': 'Leo Arruda',
-    'start_date': datetime(2020, 4, 23),
-    'depends_on_past': False,
-    'email_on_retry': False,
-    'retries': 3,
-    'retry_delay': timedelta(minutes=5),
-    'execution_timeout': timedelta(minutes=60)
 }
+# [END default_args]
 
-dag = DAG('capstone_covid_airflow',
-          default_args=default_args,
-          description='Load and transform data in Redshift with Airflow',
-          schedule_interval='@daily',
-          catchup=False
-        )
+# [START instantiate_dag]
+with DAG(
+    'covid_data_etl_dag',
+    default_args=default_args,
+    description='ETL COVID DAG',
+    schedule_interval=None,
+    start_date=days_ago(2),
+    tags=['ETL', 'Dataset'],
+) as dag:
+    # [END instantiate_dag]
+    # [START documentation]
+    dag.doc_md = __doc__
+    # [END documentation]
 
-start_operator = DummyOperator(task_id='Begin_execution', dag=dag)
+    # [START extract_function]
+    def extract(**kwargs):
+        ti = kwargs['ti']
+        data_string = '{"1001": 301.27, "1002": 433.21, "1003": 502.22}'
+        ti.xcom_push('order_data', data_string)
+        
+        # Downloading files from John Hopkins Institute github
+        final_date = datetime.datetime.now() - datetime.timedelta(days=1)
+        files = download_covid_data.download_covid_data(end_date=final_date)
+######################################
+        # Uploading donloaded files to Amazon S3
+        for file in files:
+            print('Uploading file: {}'.format(file))
+            filename = 'data/{}'.format(file)
+            destination = 'landing/{}'.format(file)
+            bucket_name = 'udacity-data-lake'
+            s3_file_transfer.upload_file(file_name=filename, bucket=bucket_name, object_name=destination)
 
-create_redshift_tables = CreateTablesOperator(
-    task_id='Create_tables',
-    dag=dag,
-    redshift_conn_id="redshift"
-)
+    # [END extract_function]
 
-staging_covid_to_redshift = StageToRedshiftOperator(
-    task_id='Staging_covid',
-    dag=dag,
-    table="staging_covid",
-    redshift_conn_id="redshift",
-    aws_credentials_id="aws_credentials",
-    s3_bucket="udacity-data-lake",
-    s3_key="covid19/staging/",
-    region="us-west-2",
-    extra_params="delimiter ';'"
-)
+    # [START transform_function]
+    def transform(**kwargs):
+        ti = kwargs['ti']
+        extract_data_string = ti.xcom_pull(task_ids='extract', key='order_data')
+        order_data = json.loads(extract_data_string)
 
-load_location_dimension_table = LoadDimensionOperator(
-    task_id='Load_location_dimension_table',
-    dag=dag,
-    table='dim_location',
-    redshift_conn_id="redshift",
-    truncate_table=True,
-    load_sql_stmt=SqlQueries.location_table_insert
-)
+        spark = early_transformation.create_spark_session()
+        early_transformation.transform_data_schema(spark, input_data='data/', output_data='data/processed/')
 
-load_date_dimension_table = LoadDimensionOperator(
-    task_id='Load_date_dimension_table',
-    dag=dag,
-    table='dim_date',
-    redshift_conn_id="redshift",
-    truncate_table=True,
-    load_sql_stmt=SqlQueries.date_table_insert
-)
+    # [END transform_function]
 
-load_covid_cases_fact_table = LoadFactOperator(
-    task_id='Load_covid_cases_fact_table',
-    dag=dag,
-    table='fact_covid_cases',
-    redshift_conn_id="redshift",
-    load_sql_stmt=SqlQueries.covid_cases_insert
-)
+    # [START load_function]
+    def load(**kwargs):
+        ti = kwargs['ti']
+        total_value_string = ti.xcom_pull(task_ids='transform', key='total_order_value')
+        total_order_value = json.loads(total_value_string)
+        print(total_order_value)
+        ######################## Correct ###########################
+        with os.scandir('out/processed/') as it:
+            for entry in it:
+                if entry.name.endswith(".csv") and entry.is_file():
+                    print(entry.name, entry.path)
+                    # print(path_in_str)
+                    file=str(entry.name)
+                    filename = 'out/processed/{}'.format(file)
+                    destination = 'covid19/staging/{}'.format(file)
+                    bucket_name = 'udacity-data-lake'
+                    s3_file_transfer.upload_file(file_name=filename, bucket=bucket_name, object_name=destination)
 
-run_quality_checks = DataQualityOperator(
-    task_id='Run_data_quality_checks',
-    dag=dag,
-    dq_checks=[
-        { 'check_sql': 'SELECT COUNT(*) FROM public.songplays WHERE userid IS NULL', 'expected_result': 0 }, 
-        { 'check_sql': 'SELECT COUNT(DISTINCT "level") FROM public.songplays', 'expected_result': 2 },
-        { 'check_sql': 'SELECT COUNT(*) FROM public.artists WHERE name IS NULL', 'expected_result': 0 },
-        { 'check_sql': 'SELECT COUNT(*) FROM public.songs WHERE title IS NULL', 'expected_result': 0 },
-        { 'check_sql': 'SELECT COUNT(*) FROM public.users WHERE first_name IS NULL', 'expected_result': 0 },
-        { 'check_sql': 'SELECT COUNT(*) FROM public."time" WHERE weekday IS NULL', 'expected_result': 0 },
-        { 'check_sql': 'SELECT COUNT(*) FROM public.songplays sp LEFT OUTER JOIN public.users u ON u.userid = sp.userid WHERE u.userid IS NULL', \
-         'expected_result': 0 }
-    ],
-    redshift_conn_id="redshift"
-)
+    # [END load_function]
 
-end_operator = DummyOperator(task_id='Stop_execution',  dag=dag)
+    # [START main_flow]
+    extract_task = PythonOperator(
+        task_id='extract',
+        python_callable=extract,
+    )
+    extract_task.doc_md = dedent(
+        """\
+    #### Extract task
+    A simple Extract task to get data ready for the rest of the data pipeline.
+    In this case, getting data is simulated by reading from a hardcoded JSON string.
+    This data is then put into xcom, so that it can be processed by the next task.
+    """
+    )
 
-#
-# Tasks ordering
-#
+    transform_task = PythonOperator(
+        task_id='transform',
+        python_callable=transform,
+    )
+    transform_task.doc_md = dedent(
+        """\
+    #### Transform task
+    A simple Transform task which takes in the collection of order data from xcom
+    and computes the total order value.
+    This computed value is then put into xcom, so that it can be processed by the next task.
+    """
+    )
 
-start_operator >> create_redshift_tables
+    load_task = PythonOperator(
+        task_id='load',
+        python_callable=load,
+    )
+    load_task.doc_md = dedent(
+        """\
+    #### Load task
+    A simple Load task which takes in the result of the Transform task, by reading it
+    from xcom and instead of saving it to end user review, just prints it out.
+    """
+    )
 
-create_redshift_tables >> staging_covid_to_redshift
+    extract_task >> transform_task >> load_task
 
-staging_covid_to_redshift >> [load_date_dimension_table, load_location_dimension_table]
+# [END main_flow]
 
-[load_date_dimension_table, load_location_dimension_table] >> load_covid_cases_fact_table
-
-load_covid_cases_fact_table >> end_operator
-
-#run_quality_checks >> end_operator
+# [END tutorial]
