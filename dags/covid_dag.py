@@ -9,7 +9,6 @@ as part of the documentation that goes along with the Airflow Functional DAG tut
 """
 # [START tutorial]
 # [START import_module]
-import json
 import os
 import datetime
 from textwrap import dedent
@@ -48,14 +47,10 @@ with DAG(
 
     # [START extract_function]
     def extract(**kwargs):
-        ti = kwargs['ti']
-        data_string = '{"1001": 301.27, "1002": 433.21, "1003": 502.22}'
-        ti.xcom_push('order_data', data_string)
-        
         # Downloading files from John Hopkins Institute github
         final_date = datetime.datetime.now() - datetime.timedelta(days=1)
         files = download_covid_data.download_covid_data(end_date=final_date)
-######################################
+        ######################################
         # Uploading donloaded files to Amazon S3
         for file in files:
             print('Uploading file: {}'.format(file))
@@ -63,15 +58,10 @@ with DAG(
             destination = 'landing/{}'.format(file)
             bucket_name = 'udacity-data-lake'
             s3_file_transfer.upload_file(file_name=filename, bucket=bucket_name, object_name=destination)
-
     # [END extract_function]
 
     # [START transform_function]
     def transform(**kwargs):
-        ti = kwargs['ti']
-        extract_data_string = ti.xcom_pull(task_ids='extract', key='order_data')
-        order_data = json.loads(extract_data_string)
-
         spark = early_transformation.create_spark_session()
         early_transformation.transform_data_schema(spark, input_data='data/', output_data='data/processed/')
 
@@ -79,10 +69,6 @@ with DAG(
 
     # [START load_function]
     def load(**kwargs):
-        ti = kwargs['ti']
-        total_value_string = ti.xcom_pull(task_ids='transform', key='total_order_value')
-        total_order_value = json.loads(total_value_string)
-        print(total_order_value)
         ######################## Correct ###########################
         with os.scandir('out/processed/') as it:
             for entry in it:
