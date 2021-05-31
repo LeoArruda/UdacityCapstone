@@ -1,7 +1,6 @@
 import configparser
 import os
 from scripts import s3_file_transfer
-from pathlib import Path
 config = configparser.ConfigParser()
 
 config.read('secrets/secret.cfg')

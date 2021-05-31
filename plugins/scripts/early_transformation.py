@@ -3,11 +3,8 @@ from datetime import datetime
 import os
 from pyspark.sql import SparkSession
 from pyspark.sql.types import StructField,StringType
-from pyspark.sql.types import StructType,StructField, StringType, IntegerType 
-from pyspark.sql.types import ArrayType, DoubleType, BooleanType, DateType
-from pyspark.sql.functions import udf, col, array_contains, when, concat_ws, to_date
-from pyspark.sql.functions import to_timestamp, lit, date_format, trim, coalesce, length
-from pyspark.sql.window import Window
+from pyspark.sql.functions import col, when, concat_ws, to_date
+from pyspark.sql.functions import to_timestamp, lit, date_format, trim, length
 import pyspark.sql.functions as F
 from pyspark.sql.types import StructType, StructField, DoubleType, StringType, IntegerType, DateType, TimestampType
 
@@ -136,17 +133,17 @@ def transform_data_schema(spark, input_data, output_data):
         .save(output_data)
 
 
-def main():
-    """
-        Extract songs and events data from S3, Transform it into dimensional tables format, and Load it back to S3 in Parquet format
-    """
-    spark = create_spark_session()
-    input_data = "s3://udacity-dend/"
-    output_data = "s3://udacity-leo/data/"
+# def main():
+#     """
+#         Extract songs and events data from S3, Transform it into dimensional tables format, and Load it back to S3 in Parquet format
+#     """
+#     spark = create_spark_session()
+#     input_data = "s3://udacity-dend/"
+#     output_data = "s3://udacity-leo/data/"
     
-    process_song_data(spark, input_data, output_data)    
-    process_log_data(spark, input_data, output_data)
+#     process_song_data(spark, input_data, output_data)    
+#     process_log_data(spark, input_data, output_data)
 
 
-if __name__ == "__main__":
-    main()
+# if __name__ == "__main__":
+#     main()

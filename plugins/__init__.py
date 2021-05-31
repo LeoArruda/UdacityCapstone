@@ -1,20 +1,33 @@
 from __future__ import division, absolute_import, print_function
 
 from airflow.plugins_manager import AirflowPlugin
-from . import operators
-from . import helpers
+from operators import (CreateTablesOperator, DataQualityOperator, ExtractDataToS3tOperator, LoadDimensionOperator, LoadFactOperator, LocalToS3Operator, RunPythonCodeDataOperator, CalculateNewCasesOperator, StageToRedshiftOperator)
+from helpers import SqlQueries
+from scripts import (download_covid_data, early_transformation, GitUtils, s3_file_transfer)
+
 
 # Defining the plugin class
 class UdacityPlugin(AirflowPlugin):
     name = "udacity_plugin"
     operators = [
-        operators.StageToRedshiftOperator,
-        operators.LoadFactOperator,
-        operators.LoadDimensionOperator,
-        operators.DataQualityOperator,
-        operators.CreateTablesOperator,
-        operators.DownloadAllJHUCovidDataOperator
+        CreateTablesOperator,
+        DataQualityOperator, 
+        ExtractDataToS3tOperator,
+        LoadDimensionOperator, 
+        LoadFactOperator,
+        LocalToS3Operator,
+        RunPythonCodeDataOperator,
+        CalculateNewCasesOperator,
+        StageToRedshiftOperator,
+
     ]
     helpers = [
-        helpers.SqlQueries
+        SqlQueries
+    ]
+
+    scripts = [
+        download_covid_data,
+        early_transformation,
+        GitUtils,
+        s3_file_transfer
     ]

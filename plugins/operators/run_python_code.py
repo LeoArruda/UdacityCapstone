@@ -1,7 +1,7 @@
 from airflow import DAG
 from airflow.operators.python_operator import PythonOperator
 from airflow.utils.decorators import apply_defaults
-from scripts import download_covid_data, s3_file_transfer
+from scripts import download_covid_data
 
 ###
 # To do: export PYTHONPATH=/path/to/my/scripts/dir/:$PYTHONPATH
@@ -12,7 +12,7 @@ class RunPythonCodeDataOperator(PythonOperator):
 
     @apply_defaults
     def __init__(self,
-                 task_id='Download_All_JHU_Covid_Data',
+                 task_id='',
                  provide_context=False,
                  python_callable=download_covid_data,
                  *args, **kwargs):
@@ -23,8 +23,9 @@ class RunPythonCodeDataOperator(PythonOperator):
         self.python_callable = python_callable
 
     def execute(self, context):
-        dag = DAG('DownloadAllJHUCovidData')
-        self.log.info(f"Downloading JHU Covid Dataset.")
+        dag = DAG(self.task_id)
+        task_text = '{}'.format(self.task_id)
+        self.log.info(f"Executing "+task_text)
         PythonOperator(dag=dag,
                task_id=self.task_id,
                provide_context=self.provide_context,

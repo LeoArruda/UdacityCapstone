@@ -19,7 +19,7 @@ from airflow import DAG
 # Operators; we need this to operate!
 from airflow.operators.python import PythonOperator
 from airflow.utils.dates import days_ago
-from scripts import download_covid_data, early_transformation, s3_file_transfer
+from plugins.scripts import download_covid_data, early_transformation, s3_file_transfer
 
 # [END import_module]
 
