@@ -29,8 +29,9 @@ default_args = {
 dag = DAG('capstone_covid_airflow',
           default_args=default_args,
           description='Load and transform data in Redshift with Airflow',
-          schedule_interval='@daily',
-          catchup=False
+          schedule_interval=None,
+          catchup=False,
+          tags=['Load', 'Dataset', 'Redshift']
         )
 
 start_operator = DummyOperator(task_id='Begin_execution', dag=dag)
@@ -82,7 +83,6 @@ load_dim_date_table = LoadDimensionOperator(
 calculate_new_cases_on_fact = CalculateNewCasesOperator(
     task_id='Calculate_new_cases_on_fact',
     dag=dag,
-    table='dim_date',
     redshift_conn_id="redshift",
     calculate_sql_stmt=SqlQueries.calculate_new_cases
 )
