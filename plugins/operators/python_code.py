@@ -1,7 +1,7 @@
 from airflow import DAG
 from airflow.operators.python_operator import PythonOperator
 from airflow.utils.decorators import apply_defaults
-from scripts import download_covid_data
+from scripts.download_datasets import download_covid_data
 
 ###
 # To do: export PYTHONPATH=/path/to/my/scripts/dir/:$PYTHONPATH

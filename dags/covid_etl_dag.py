@@ -19,7 +19,20 @@ from airflow import DAG
 # Operators; we need this to operate!
 from airflow.operators.python import PythonOperator
 from airflow.utils.dates import days_ago
-from plugins.scripts import download_covid_data, early_transformation, s3_file_transfer
+from scripts.s3_file_transfer import upload_file
+from scripts.download_datasets import download_covid_data
+from scripts.early_transformation import create_spark_session, transform_data_schema
+from scripts.download_git_utils import GitUtils
+
+from operators.calculate_cases import CalculateNewCasesOperator
+from operators.create_tables import CreateTablesOperator
+from operators.data_quality import DataQualityOperator
+from operators.extract_data import ExtractDataToS3tOperator
+from operators.local_to_s3 import LocalToS3Operator
+from operators.load_fact import LoadFactOperator
+from operators.load_dimension import LoadDimensionOperator
+from operators.python_code import RunPythonCodeDataOperator
+from operators.stage_redshift import StageToRedshiftOperator
 
 # [END import_module]
 
@@ -49,7 +62,7 @@ with DAG(
     def extract(**kwargs):
         # Downloading files from John Hopkins Institute github
         final_date = datetime.datetime.now() - datetime.timedelta(days=1)
-        files = download_covid_data.download_covid_data(end_date=final_date)
+        files = download_covid_data(end_date=final_date)
         ######################################
         # Uploading donloaded files to Amazon S3
         for file in files:
@@ -57,13 +70,13 @@ with DAG(
             filename = 'data/{}'.format(file)
             destination = 'landing/{}'.format(file)
             bucket_name = 'udacity-data-lake'
-            s3_file_transfer.upload_file(file_name=filename, bucket=bucket_name, object_name=destination)
+            upload_file(file_name=filename, bucket=bucket_name, object_name=destination)
     # [END extract_function]
 
     # [START transform_function]
     def transform(**kwargs):
-        spark = early_transformation.create_spark_session()
-        early_transformation.transform_data_schema(spark, input_data='data/', output_data='data/processed/')
+        spark = create_spark_session()
+        transform_data_schema(spark, input_data='data/', output_data='data/processed/')
 
     # [END transform_function]
 
@@ -79,7 +92,7 @@ with DAG(
                     filename = 'out/processed/{}'.format(file)
                     destination = 'covid19/staging/{}'.format(file)
                     bucket_name = 'udacity-data-lake'
-                    s3_file_transfer.upload_file(file_name=filename, bucket=bucket_name, object_name=destination)
+                    upload_file(file_name=filename, bucket=bucket_name, object_name=destination)
 
     # [END load_function]
 

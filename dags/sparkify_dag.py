@@ -4,9 +4,17 @@ from airflow import DAG
 from airflow.operators.dummy_operator import DummyOperator
 from airflow.operators.postgres_operator import PostgresOperator
 from airflow.operators.python_operator import PythonOperator
-from airflow.operators import (StageToRedshiftOperator, LoadFactOperator,
-                                LoadDimensionOperator, DataQualityOperator, CreateTablesOperator)
-from plugins.helpers import SqlQueries
+from operators.calculate_cases import CalculateNewCasesOperator
+from operators.create_tables import CreateTablesOperator
+from operators.data_quality import DataQualityOperator
+from operators.extract_data import ExtractDataToS3tOperator
+from operators.local_to_s3 import LocalToS3Operator
+from operators.load_fact import LoadFactOperator
+from operators.load_dimension import LoadDimensionOperator
+from operators.python_code import RunPythonCodeDataOperator
+from operators.stage_redshift import StageToRedshiftOperator
+
+from helpers import SqlQueries
 
 default_args = {
     'owner': 'Leo Arruda',
@@ -57,50 +65,49 @@ stage_songs_to_redshift = StageToRedshiftOperator(
     extra_params="JSON 'auto' COMPUPDATE OFF"
 )
 
-load_songplays_table = LoadFactOperator(
-    task_id='Load_songplays_fact_table',
-    dag=dag,
-    table='songplays',
-    redshift_conn_id="redshift",
-    load_sql_stmt=SqlQueries.songplay_table_insert
-)
+# load_songplays_table = LoadFactOperator(
+#     task_id='Load_songplays_fact_table',
+#     dag=dag,
+#     table='songplays',
+#     redshift_conn_id="redshift",
+#     load_sql_stmt=SqlQueries.
 
-load_user_dimension_table = LoadDimensionOperator(
-    task_id='Load_user_dim_table',
-    dag=dag,
-    table='users',
-    redshift_conn_id="redshift",
-    truncate_table=True,
-    load_sql_stmt=SqlQueries.user_table_insert
-)
+# load_user_dimension_table = LoadDimensionOperator(
+#     task_id='Load_user_dim_table',
+#     dag=dag,
+#     table='users',
+#     redshift_conn_id="redshift",
+#     truncate_table=True,
+#     load_sql_stmt=SqlQueries.user_table_insert
+# )
 
-load_song_dimension_table = LoadDimensionOperator(
-    task_id='Load_song_dim_table',
-    dag=dag,
-    table='songs',
-    redshift_conn_id="redshift",
-    truncate_table=True,
-    load_sql_stmt=SqlQueries.song_table_insert
-)
+# load_song_dimension_table = LoadDimensionOperator(
+#     task_id='Load_song_dim_table',
+#     dag=dag,
+#     table='songs',
+#     redshift_conn_id="redshift",
+#     truncate_table=True,
+#     load_sql_stmt=SqlQueries.song_table_insert
+# )
 
-load_artist_dimension_table = LoadDimensionOperator(
-    task_id='Load_artist_dim_table',
-    dag=dag,
-    table='artists',
-    redshift_conn_id="redshift",
-    truncate_table=True,
-    load_sql_stmt=SqlQueries.artist_table_insert
-)
+# load_artist_dimension_table = LoadDimensionOperator(
+#     task_id='Load_artist_dim_table',
+#     dag=dag,
+#     table='artists',
+#     redshift_conn_id="redshift",
+#     truncate_table=True,
+#     load_sql_stmt=SqlQueries.artist_table_insert
+# )
 
-load_time_dimension_table = LoadDimensionOperator(
-    task_id='Load_time_dim_table',
-    dag=dag,
-    table='time',
-    redshift_conn_id="redshift",
-    truncate_table=True,
-    load_sql_stmt=SqlQueries.time_table_insert
+# load_time_dimension_table = LoadDimensionOperator(
+#     task_id='Load_time_dim_table',
+#     dag=dag,
+#     table='time',
+#     redshift_conn_id="redshift",
+#     truncate_table=True,
+#     load_sql_stmt=SqlQueries.time_table_insert
 
-)
+# )
 
 run_quality_checks = DataQualityOperator(
     task_id='Run_data_quality_checks',
@@ -128,8 +135,8 @@ start_operator >> create_redshift_tables
 
 create_redshift_tables >> [stage_events_to_redshift, stage_songs_to_redshift]
 
-[stage_events_to_redshift, stage_songs_to_redshift] >> load_songplays_table
+#[stage_events_to_redshift, stage_songs_to_redshift] >> load_songplays_table
 
-load_songplays_table >> [load_user_dimension_table, load_song_dimension_table, load_artist_dimension_table, load_time_dimension_table ] >> run_quality_checks
+#load_songplays_table >> [load_user_dimension_table, load_song_dimension_table, load_artist_dimension_table, load_time_dimension_table ] >> run_quality_checks
 
-run_quality_checks >> end_operator
+#run_quality_checks >> end_operator

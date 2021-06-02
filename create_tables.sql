@@ -1,4 +1,4 @@
-CREATE TABLE IF NOT EXISTS public.staging_covid (
+CREATE TABLE IF NOT EXISTS staging_covid (
     "Datekey" INT4,
     "Year" INT4,
     "Month" INT4,
@@ -17,7 +17,7 @@ CREATE TABLE IF NOT EXISTS public.staging_covid (
     "Combined_Key" VARCHAR(256)
 );
 
-CREATE TABLE IF NOT EXISTS public.dim_date (
+CREATE TABLE IF NOT EXISTS dim_date (
     "Datekey" INT4 NOT NULL,
     "Year" INT4,
     "Month" INT4,
@@ -32,7 +32,7 @@ CREATE TABLE IF NOT EXISTS public.dim_date (
     CONSTRAINT "pk_dim_date_datekey" PRIMARY KEY ("Datekey")
 );
 
-CREATE TABLE IF NOT EXISTS public.dim_location (
+CREATE TABLE IF NOT EXISTS dim_location (
     "Combined_key" VARCHAR(255) NOT NULL,
     "State" VARCHAR(255),
     "Country" VARCHAR(255) NOT NULL,
@@ -41,7 +41,7 @@ CREATE TABLE IF NOT EXISTS public.dim_location (
     CONSTRAINT "pk_dim_location_combined_key" PRIMARY KEY ("Combined_key")
 );
 
-CREATE TABLE IF NOT EXISTS public.fact_covid_cases (
+CREATE TABLE IF NOT EXISTS fact_covid_cases (
     "id" bigint IDENTITY(1, 1),
     "Combined_key" VARCHAR(255) NOT NULL,
     "Datekey" INT4 NOT NULL,

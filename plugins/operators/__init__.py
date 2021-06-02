@@ -1,18 +1,23 @@
-from operators import StageToRedshiftOperator
-from operators import LoadFactOperator
-from operators import LoadDimensionOperator
-from operators import DataQualityOperator
-from operators import CreateTablesOperator
-from operators import DownloadAllJHUCovidDataOperator
-from operators import CalculateNewCasesOperator
+from operators.calculate_cases import CalculateNewCasesOperator
+from operators.create_tables import CreateTablesOperator
+from operators.data_quality import DataQualityOperator
+from operators.extract_data import ExtractDataToS3tOperator
+from operators.local_to_s3 import LocalToS3Operator
+from operators.load_fact import LoadFactOperator
+from operators.load_dimension import LoadDimensionOperator
+from operators.python_code import RunPythonCodeDataOperator
+from operators.stage_redshift import StageToRedshiftOperator
+
 # import operators
 
 __all__ = [
-    'StageToRedshiftOperator',
+    'CalculateNewCasesOperator',
+    'CreateTablesOperator',
+    'DataQualityOperator',
+    'ExtractDataToS3tOperator',
+    'LocalToS3Operator',
     'LoadFactOperator',
     'LoadDimensionOperator',
-    'DataQualityOperator',
-    'CreateTablesOperator',
-    'DownloadAllJHUCovidDataOperator',
-    'CalculateNewCasesOperator'
+    'RunPythonCodeDataOperator',
+    'StageToRedshiftOperator',
 ]
