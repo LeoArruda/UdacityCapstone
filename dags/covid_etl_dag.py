@@ -10,7 +10,7 @@ as part of the documentation that goes along with the Airflow Functional DAG tut
 # [START tutorial]
 # [START import_module]
 import os
-import datetime
+from datetime import datetime, timedelta
 from textwrap import dedent
 
 # The DAG object; we'll need this to instantiate a DAG
@@ -41,6 +41,11 @@ from operators.stage_redshift import StageToRedshiftOperator
 # You can override them on a per-task basis during operator initialization
 default_args = {
     'owner': 'Leo Arruda',
+    'depends_on_past': False,
+    'email_on_retry': False,
+    'retries': 3,
+    'retry_delay': timedelta(minutes=5),
+    'execution_timeout': timedelta(minutes=60)
 }
 # [END default_args]
 

@@ -13,7 +13,6 @@ from operators.load_fact import LoadFactOperator
 from operators.load_dimension import LoadDimensionOperator
 from operators.python_code import RunPythonCodeDataOperator
 from operators.stage_redshift import StageToRedshiftOperator
-
 from helpers import SqlQueries
 
 default_args = {
@@ -87,21 +86,16 @@ calculate_new_cases_on_fact = CalculateNewCasesOperator(
     calculate_sql_stmt=SqlQueries.calculate_new_cases
 )
 
-# run_quality_checks = DataQualityOperator(
-#     task_id='Run_data_quality_checks',
-#     dag=dag,
-#     dq_checks=[
-#         { 'check_sql': 'SELECT COUNT(*) FROM public.songplays WHERE userid IS NULL', 'expected_result': 0 }, 
-#         { 'check_sql': 'SELECT COUNT(DISTINCT "level") FROM public.songplays', 'expected_result': 2 },
-#         { 'check_sql': 'SELECT COUNT(*) FROM public.artists WHERE name IS NULL', 'expected_result': 0 },
-#         { 'check_sql': 'SELECT COUNT(*) FROM public.songs WHERE title IS NULL', 'expected_result': 0 },
-#         { 'check_sql': 'SELECT COUNT(*) FROM public.users WHERE first_name IS NULL', 'expected_result': 0 },
-#         { 'check_sql': 'SELECT COUNT(*) FROM public."time" WHERE weekday IS NULL', 'expected_result': 0 },
-#         { 'check_sql': 'SELECT COUNT(*) FROM public.songplays sp LEFT OUTER JOIN public.users u ON u.userid = sp.userid WHERE u.userid IS NULL', \
-#          'expected_result': 0 }
-#     ],
-#     redshift_conn_id="redshift"
-# )
+run_quality_checks = DataQualityOperator(
+    task_id='Run_data_quality_checks',
+    dag=dag,
+    dq_checks=[
+        { 'check_sql': 'SELECT COUNT(*) FROM public.fact_covid_cases WHERE Combined_key IS NULL', 'expected_result': 0 }, 
+        { 'check_sql': 'SELECT COUNT(*) FROM public.dim_date WHERE Datekey IS NULL', 'expected_result': 0 },
+        { 'check_sql': 'SELECT COUNT(*) FROM public.dim_location WHERE Combined_key IS NULL', 'expected_result': 0 }
+    ],
+    redshift_conn_id="redshift"
+)
 
 end_operator = DummyOperator(task_id='Stop_execution',  dag=dag)
 
@@ -117,7 +111,7 @@ stage_covid_to_redshift >> [load_dim_location_table, load_dim_date_table]
 
 [load_dim_location_table, load_dim_date_table] >> load_covid_cases_fact_table
 
-load_covid_cases_fact_table >> calculate_new_cases_on_fact >> end_operator
+load_covid_cases_fact_table >> calculate_new_cases_on_fact
 
-#calculate_new_cases_on_fact >> run_quality_checks
+calculate_new_cases_on_fact >> run_quality_checks
 
