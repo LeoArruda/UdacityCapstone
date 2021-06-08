@@ -4,8 +4,8 @@ from airflow.models import BaseOperator
 from airflow.utils.decorators import apply_defaults
 
 class CreateTablesOperator(BaseOperator):
-    ui_color = '#358140'
-    sql_statement_file='create_tables.sql'
+    ui_color = '#52f2df'
+    sql_statement_file='/Users/leandroarruda/Codes/UdacityCapstone/create_tables.sql'
 
     @apply_defaults
     def __init__(self,

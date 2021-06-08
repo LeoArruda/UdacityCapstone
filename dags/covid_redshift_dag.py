@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+import logging
 import os
 from airflow import DAG
 from airflow.operators.dummy_operator import DummyOperator
@@ -7,11 +8,8 @@ from airflow.operators.python_operator import PythonOperator
 from operators.calculate_cases import CalculateNewCasesOperator
 from operators.create_tables import CreateTablesOperator
 from operators.data_quality import DataQualityOperator
-from operators.extract_data import ExtractDataToS3tOperator
-from operators.local_to_s3 import LocalToS3Operator
 from operators.load_fact import LoadFactOperator
 from operators.load_dimension import LoadDimensionOperator
-from operators.python_code import RunPythonCodeDataOperator
 from operators.stage_redshift import StageToRedshiftOperator
 from helpers import SqlQueries
 
@@ -40,13 +38,13 @@ create_redshift_tables = CreateTablesOperator(
     dag=dag,
     redshift_conn_id="redshift"
 )
-
+logging.info('Starting staging to redshift')
 stage_covid_to_redshift = StageToRedshiftOperator(
     task_id='Stage_covid',
     dag=dag,
     table="staging_covid",
     redshift_conn_id="redshift",
-    aws_credentials_id="aws_credentials",
+    aws_credentials_id="aws_s3_connection",
     s3_bucket="udacity-data-lake",
     s3_key="covid19/staging",
     region="us-west-2",
@@ -115,3 +113,4 @@ load_covid_cases_fact_table >> calculate_new_cases_on_fact
 
 calculate_new_cases_on_fact >> run_quality_checks
 
+run_quality_checks >> end_operator

@@ -18,21 +18,11 @@ from airflow import DAG
 
 # Operators; we need this to operate!
 from airflow.operators.python import PythonOperator
+from airflow.contrib.operators.spark_submit_operator import SparkSubmitOperator
 from airflow.utils.dates import days_ago
 from scripts.s3_file_transfer import upload_file
 from scripts.download_datasets import download_covid_data
-from scripts.early_transformation import create_spark_session, transform_data_schema
-from scripts.download_git_utils import GitUtils
-
-from operators.calculate_cases import CalculateNewCasesOperator
-from operators.create_tables import CreateTablesOperator
-from operators.data_quality import DataQualityOperator
-from operators.extract_data import ExtractDataToS3tOperator
-from operators.local_to_s3 import LocalToS3Operator
-from operators.load_fact import LoadFactOperator
-from operators.load_dimension import LoadDimensionOperator
 from operators.python_code import RunPythonCodeDataOperator
-from operators.stage_redshift import StageToRedshiftOperator
 
 # [END import_module]
 
@@ -43,7 +33,7 @@ default_args = {
     'owner': 'Leo Arruda',
     'depends_on_past': False,
     'email_on_retry': False,
-    'retries': 3,
+    'retries': 0,
     'retry_delay': timedelta(minutes=5),
     'execution_timeout': timedelta(minutes=60)
 }
@@ -66,35 +56,147 @@ with DAG(
     # [START extract_function]
     def extract(**kwargs):
         # Downloading files from John Hopkins Institute github
-        final_date = datetime.datetime.now() - datetime.timedelta(days=1)
-        files = download_covid_data(end_date=final_date)
+        final_date = datetime.now() - timedelta(days=1)
+        download_covid_data(end_date=final_date)
         ######################################
         # Uploading donloaded files to Amazon S3
-        for file in files:
-            print('Uploading file: {}'.format(file))
-            filename = 'data/{}'.format(file)
-            destination = 'landing/{}'.format(file)
-            bucket_name = 'udacity-data-lake'
-            upload_file(file_name=filename, bucket=bucket_name, object_name=destination)
-    # [END extract_function]
+        with os.scandir('/Users/leandroarruda/Codes/UdacityCapstone/data/') as it:
+            for entry in it:
+                if entry.name.endswith(".csv") and entry.is_file():
+                    print(entry.name, entry.path)
+                    # print(path_in_str)
+                    file=str(entry.name)
+                    filename = '/Users/leandroarruda/Codes/UdacityCapstone/data/{}'.format(file)
+                    destination = 'landing/{}'.format(file)
+                    bucket_name = 'udacity-data-lake'
+                    upload_file(file_name=filename, bucket=bucket_name, object_name=destination)
+    # # [END extract_function]
 
     # [START transform_function]
     def transform(**kwargs):
-        spark = create_spark_session()
-        transform_data_schema(spark, input_data='data/', output_data='data/processed/')
+        import os
+        from pyspark.sql.functions import col, when, concat_ws, to_date
+        from pyspark.sql.functions import to_timestamp, lit, date_format, trim, length
+        import pyspark.sql.functions as F
+        from pyspark.sql.types import StructField, StringType
+
+        #os.environ['JAVA_HOME'] = "/Library/Java/JavaVirtualMachines/jdk1.8.0_131.jdk/Contents/Home"
+        os.environ['PYSPARK_SUBMIT_ARGS'] = """--name job_name --master local --conf spark.dynamicAllocation.enabled=true pyspark-shell""" 
+
+        from pyspark.sql import SparkSession
+        spark = SparkSession \
+            .builder \
+            .appName("Early Transformations") \
+            .getOrCreate()
+
+        input_data='/Users/leandroarruda/Codes/UdacityCapstone/data/'
+        output_data='/Users/leandroarruda/Codes/UdacityCapstone/data/processed/'
+
+        # get filepath to song data file
+        raw_data = input_data + '*.csv'
+
+        # read raw data file
+        df = spark.read \
+                .option("header",True) \
+                .option("inferSchema",True) \
+                .csv(raw_data)
+
+        df= df \
+            .withColumn("Country_Region", 
+            when(df["Country_Region"].contains("China"),"China")
+            .otherwise(df["Country_Region"]))
+
+        df= df \
+            .withColumn("Country_Region", 
+            when(df["Country_Region"].contains("Republic of Korea"),"Korea, South")
+            .otherwise(df["Country_Region"]))
+
+        df= df \
+            .withColumn("Country_Region", 
+            when(df["Country_Region"].contains("Cote d'Ivoir"),"Cote d Ivoir")
+            .otherwise(df["Country_Region"]))
+
+        df= df \
+            .withColumn("Country_Region", 
+            when(df["Country_Region"].contains("Taiwan*"),"Taiwan")
+            .otherwise(df["Country_Region"]))
+
+        df= df \
+            .withColumn("Combined_Key", 
+            when(df["Country_Region"].isNull(),
+            concat_ws(", ", df["Province_State"], df["Country_Region"]))
+            .otherwise(df["Combined_Key"]))
+
+        df= df \
+            .withColumn("Combined_Key", 
+            when(df["Combined_Key"].contains("Taiwan*"),"Taiwan")
+            .otherwise(df["Combined_Key"]))
+
+        df= df \
+            .withColumn("CaseFatalityRatio", (df.Deaths/df.Confirmed)*100)
+
+        if not (StructField("Incidence_Rate",StringType(),True) in df.schema):
+            df = df \
+                .withColumn("Incidence_Rate", lit(0.0))
+
+        df = df.withColumn('Last_date', F.col('Last_Update').cast("timestamp")) 
+        df = df.withColumn('Last_date', F.split("Last_Update", " ").getItem(0))
+        df=df.filter(length(df.Last_date)==10)
+        df = df \
+            .withColumn("Last_up", to_date("Last_date", "yyyy-MM-dd"))
+
+        df = df \
+            .withColumn("Year", date_format(col("Last_up"), "yyyy")) \
+            .withColumn("Month", date_format(col("Last_up"), "MM")) \
+            .withColumn("Day", date_format(col("Last_up"), "dd")) \
+            .withColumn("Datekey", date_format(col("Last_Up"), "yyyyMMdd")) \
+            .withColumn("newDate", date_format(col("Last_Up"), "yyyy-MM-dd"))
+
+        df = df \
+            .withColumn("Combined_Key2", 
+                        trim(concat_ws(', ',trim(df['Province_State']),trim(df['Country_Region']))))
+
+        df_final = df.select(
+                        col('Datekey'), \
+                        col('Year'), \
+                        col('Month'), \
+                        col('Day'), \
+                        col('Province_State').alias('State'), \
+                        col('Country_Region').alias('Country'), \
+                        col('newDate'), \
+                        col('Lat').alias('Latitude'), \
+                        col('Long_').alias('Longitude'), \
+                        col('Confirmed'), \
+                        col('Deaths'), \
+                        col('Recovered'), \
+                        col('Active'), \
+                        col('Incidence_Rate'), \
+                        col('CaseFatalityRatio'), \
+                        col('Combined_Key2'))
+
+        df_final = df_final.orderBy(['Country','State','Datekey'], ascending=True)
+        df_final.write \
+            .format("com.databricks.spark.csv") \
+            .mode("overwrite") \
+            .option("header",False) \
+            .option("escape", "") \
+            .option("quote", "") \
+            .option("emptyValue", "") \
+            .option("delimiter", ";") \
+            .save(output_data)
 
     # [END transform_function]
 
     # [START load_function]
     def load(**kwargs):
         ######################## Correct ###########################
-        with os.scandir('out/processed/') as it:
+        with os.scandir('/Users/leandroarruda/Codes/UdacityCapstone/data/processed/') as it:
             for entry in it:
                 if entry.name.endswith(".csv") and entry.is_file():
                     print(entry.name, entry.path)
                     # print(path_in_str)
                     file=str(entry.name)
-                    filename = 'out/processed/{}'.format(file)
+                    filename = '/Users/leandroarruda/Codes/UdacityCapstone/data/processed/{}'.format(file)
                     destination = 'covid19/staging/{}'.format(file)
                     bucket_name = 'udacity-data-lake'
                     upload_file(file_name=filename, bucket=bucket_name, object_name=destination)
@@ -145,3 +247,8 @@ with DAG(
 # [END main_flow]
 
 # [END tutorial]
+
+# if __name__ == '__main__':
+#     from airflow.utils.state import State
+#     dag.clear(dag_run_state=State.NONE)
+#     dag.run()

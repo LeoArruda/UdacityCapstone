@@ -10,6 +10,7 @@ from operators.load_fact import LoadFactOperator
 from operators.load_dimension import LoadDimensionOperator
 from operators.python_code import RunPythonCodeDataOperator
 from operators.stage_redshift import StageToRedshiftOperator
+from operators.spark_code import RunSparkCodeDataOperator
 from helpers.sql_queries import SqlQueries
 from scripts.download_datasets import download_covid_data
 from scripts.download_git_utils import GitUtils
@@ -30,6 +31,7 @@ class UdacityPlugin(AirflowPlugin):
         LoadDimensionOperator,
         RunPythonCodeDataOperator,
         StageToRedshiftOperator,
+        RunSparkCodeDataOperator,
     ]
 
     helpers = [

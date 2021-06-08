@@ -20,13 +20,48 @@ MM-DD-YYYY.csv in UTC.
 * <b>Active:</b> Active cases = total cases - total recovered - total deaths.
 * <b>Incident_Rate</b>: Incidence Rate = cases per 100,000 persons.
 * <b>Case_Fatality_Ratio (%)</b>: Case-Fatality Ratio (%) = Number recorded deaths / Number cases.
-* All cases, deaths, and recoveries reported are based on the date of initial report. Exceptions to this are noted in the "Data Modification" and "Retrospective reporting of (probable) cases and deaths" subsections below.  
+* All cases, deaths, and recoveries reported are based on the date of initial report. Exceptions to this are noted in the "Data Modification" and "Retrospective reporting of (probable) cases and deaths" subsections below.
 
-### Update frequency
-* Since June 15, We are moving the update time forward to occur between 04:45 and 05:15 GMT to accommodate daily updates from India's Ministry of Health and Family Welfare.
-* Files on and after April 23, once per day between 03:30 and 04:00 UTC. 
-* Files from February 2 to April 22: once per day around 23:59 UTC.
-* Files on and before February 1: the last updated files before 23:59 UTC. Sources: [archived_data](https://github.com/CSSEGISandData/COVID-19/tree/master/archived_data) and dashboard.
+### Data source
+Global COVID-19 cases data files are daily updated from John Hopkins Institute at github [JHU Github](https://github.com/CSSEGISandData/COVID-19/tree/master/csse_covid_19_data/csse_covid_19_daily_reports).
 
-### Data sources
-Refer to the [mainpage](https://github.com/CSSEGISandData/COVID-19).
+
+
+### End Use Cases
+Considerando que o numero de casos durante a pandemia varia de forma diferente em cada pais, o objetivo inicial e criar  analitic tables para futura analise e desenvolvimento de deshboards.
+
+Explain what end use cases you'd like to prepare the data for
+
+
+<b>Step 1:</b> Scope the Project and Gather Data
+Since the scope of the project will be highly dependent on the data, these two things happen simultaneously. In this step, you’ll:
+
+Identify and gather the data you'll be using for your project (at least two sources and more than 1 million rows). See Project Resources for ideas of what data you can use.
+Explain what end use cases you'd like to prepare the data for (e.g., analytics table, app back-end, source-of-truth database, etc.)
+
+<b>Step 2:</b> Explore and Assess the Data
+Explore the data to identify data quality issues, like missing values, duplicate data, etc.
+Document steps necessary to clean the data
+
+<b>Step 3:</b> Define the Data Model
+Map out the conceptual data model and explain why you chose that model
+List the steps necessary to pipeline the data into the chosen data model
+
+<b>Step 4:</b> Run ETL to Model the Data
+Create the data pipelines and the data model
+Include a data dictionary
+Run data quality checks to ensure the pipeline ran as expected
+Integrity constraints on the relational database (e.g., unique key, data type, etc.)
+Unit tests for the scripts to ensure they are doing the right thing
+Source/count checks to ensure completeness
+
+<b>Step 5:</b> Complete Project Write Up
+What's the goal? What queries will you want to run? How would Spark or Airflow be incorporated? Why did you choose the model you chose?
+Clearly state the rationale for the choice of tools and technologies for the project.
+Document the steps of the process.
+Propose how often the data should be updated and why.
+Post your write-up and final data model in a GitHub repo.
+Include a description of how you would approach the problem differently under the following scenarios:
+If the data was increased by 100x.
+If the pipelines were run on a daily basis by 7am.
+If the database needed to be accessed by 100+ people.

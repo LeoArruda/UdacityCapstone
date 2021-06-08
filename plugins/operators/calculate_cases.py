@@ -3,7 +3,7 @@ from airflow.models import BaseOperator
 from airflow.utils.decorators import apply_defaults
 
 class CalculateNewCasesOperator(BaseOperator):
-    ui_color = '#8700f5'
+    ui_color = '#d7eb7f'
     
     update_sql = """
         {};

@@ -25,7 +25,7 @@ def upload_file(file_name, bucket, object_name=None):
             True if file was uploaded, else False
             
     """
-
+    logging.log(logging.INFO, "Uploading files")
     # If S3 object_name was not specified, use file_name
     if object_name is None:
         object_name = file_name
@@ -34,6 +34,7 @@ def upload_file(file_name, bucket, object_name=None):
     s3_client = boto3.client('s3')
     try:
         response = s3_client.upload_file(file_name, bucket, object_name)
+        logging.log(logging.INFO, "Uploading : {}".format(file_name))
     except ClientError as e:
         logging.error(e)
         return False

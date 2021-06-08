@@ -6,6 +6,7 @@ from operators.local_to_s3 import LocalToS3Operator
 from operators.load_fact import LoadFactOperator
 from operators.load_dimension import LoadDimensionOperator
 from operators.python_code import RunPythonCodeDataOperator
+from operators.spark_code import RunSparkCodeDataOperator
 from operators.stage_redshift import StageToRedshiftOperator
 
 # import operators
@@ -20,4 +21,5 @@ __all__ = [
     'LoadDimensionOperator',
     'RunPythonCodeDataOperator',
     'StageToRedshiftOperator',
+    'RunSparkCodeDataOperator',
 ]

@@ -1,0 +1,5 @@
+export SPARK_HOME=/usr/local/Cellar/apache-spark/3.1.2/libexec
+export PATH=$PATH:$SPARK_HOME/bin
+export PYTHONPATH=$SPARK_HOME/python:/Users/leandroarruda/Codes/UdacityCapstone/venv/bin:$PYTHONPATH
+export PYTHONPATH=$SPARK_HOME/python/lib/py4j-0.10.9-src.zip:$PYTHONPATH
+export PYSPARK_PYTHON=python3

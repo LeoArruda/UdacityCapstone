@@ -1,10 +1,11 @@
+import logging
 from airflow.hooks.postgres_hook import PostgresHook
 from airflow.models import BaseOperator
 from airflow.utils.decorators import apply_defaults
 from airflow.contrib.hooks.aws_hook import AwsHook
 
 class StageToRedshiftOperator(BaseOperator):
-    ui_color = '#358140'
+    ui_color = '#23ccb8'
     template_fields = ("s3_key",)
     
     copy_sql = """
@@ -16,7 +17,7 @@ class StageToRedshiftOperator(BaseOperator):
         {}
         ;
     """
-
+    
     @apply_defaults
     def __init__(self,
                  table="",
@@ -38,10 +39,12 @@ class StageToRedshiftOperator(BaseOperator):
         self.extra_params = extra_params
 
     def execute(self, context):
+        logging.info(f"Credentials id {self.aws_credentials_id}")
         aws_hook = AwsHook(self.aws_credentials_id)
+        #aws_hook = AwsHook(credentials=self.aws_credentials_id)
         credentials = aws_hook.get_credentials()
         redshift = PostgresHook(postgres_conn_id=self.redshift_conn_id)
-
+        
         self.log.info(f"Copying data from S3 to Redshift staging {self.table} table")
         rendered_key = self.s3_key.format(**context)
         self.log.info(f"Rendered Key: {rendered_key}")

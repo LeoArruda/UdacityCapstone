@@ -1,4 +1,3 @@
-
 from scripts.gitUtils import GitUtils
 import datetime
 import csv
