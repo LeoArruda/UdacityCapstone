@@ -1,3 +1,11 @@
+"""Second DAG file to prepare Redshift tables.
+   This DAG is responsible to:
+   - Create Redshift tables.
+   - Copy data from s3
+   - Insert data into fact and dimension tables
+   - Calculates the number of new cases per day.
+"""
+
 from datetime import datetime, timedelta
 import logging
 import os

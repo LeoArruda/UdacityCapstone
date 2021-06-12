@@ -1,14 +1,11 @@
-
-# pylint: disable=missing-function-docstring
-
+"""Main DAG file for ETL data pipeline.
+   This DAG performs:
+   Extract: collect data from John Hopkins University Github
+   Transform: runs an early transformation with Apache Spark
+   Load: loads the result csv files into s3 bucket
 """
-### ETL DAG Tutorial Documentation
-This ETL DAG is compatible with Airflow 1.10.x (specifically tested with 1.10.12) and is referenced
-as part of the documentation that goes along with the Airflow Functional DAG tutorial located
-[here](https://airflow.apache.org/tutorial_decorated_flows.html)
-"""
-# [START tutorial]
-# [START import_module]
+
+# [START imports]
 import os
 from datetime import datetime, timedelta
 from textwrap import dedent
@@ -23,11 +20,13 @@ from airflow.utils.dates import days_ago
 from scripts.s3_file_transfer import upload_file
 from scripts.download_datasets import download_covid_data
 
-# [END import_module]
+from pyspark.sql.functions import col, when, concat_ws, to_date
+from pyspark.sql.functions import to_timestamp, lit, date_format, trim, length
+import pyspark.sql.functions as F
+from pyspark.sql.types import StructField, StringType
 
-# [START default_args]
-# These args will get passed on to each operator
-# You can override them on a per-task basis during operator initialization
+# [END imports]
+
 default_args = {
     'owner': 'Leo Arruda',
     'depends_on_past': False,
@@ -36,9 +35,7 @@ default_args = {
     'retry_delay': timedelta(minutes=5),
     'execution_timeout': timedelta(minutes=60)
 }
-# [END default_args]
 
-# [START instantiate_dag]
 with DAG(
     'covid_data_etl_dag',
     default_args=default_args,
@@ -47,39 +44,23 @@ with DAG(
     start_date=days_ago(2),
     tags=['ETL', 'Dataset'],
 ) as dag:
-    # [END instantiate_dag]
-    # [START documentation]
     dag.doc_md = __doc__
-    # [END documentation]
-
-    # [START extract_function]
     def extract(**kwargs):
         # Downloading files from John Hopkins Institute github
         final_date = datetime.now() - timedelta(days=1)
         download_covid_data(end_date=final_date)
-        ######################################
-        # Uploading donloaded files to Amazon S3
+        # Uploading downloaded files to Amazon S3
         with os.scandir('/Users/leandroarruda/Codes/UdacityCapstone/data/') as it:
             for entry in it:
                 if entry.name.endswith(".csv") and entry.is_file():
                     print(entry.name, entry.path)
-                    # print(path_in_str)
                     file=str(entry.name)
                     filename = '/Users/leandroarruda/Codes/UdacityCapstone/data/{}'.format(file)
                     destination = 'landing/{}'.format(file)
                     bucket_name = 'udacity-data-lake'
                     upload_file(file_name=filename, bucket=bucket_name, object_name=destination)
-    # # [END extract_function]
-
-    # [START transform_function]
+  
     def transform(**kwargs):
-        import os
-        from pyspark.sql.functions import col, when, concat_ws, to_date
-        from pyspark.sql.functions import to_timestamp, lit, date_format, trim, length
-        import pyspark.sql.functions as F
-        from pyspark.sql.types import StructField, StringType
-
-        #os.environ['JAVA_HOME'] = "/Library/Java/JavaVirtualMachines/jdk1.8.0_131.jdk/Contents/Home"
         os.environ['PYSPARK_SUBMIT_ARGS'] = """--name job_name --master local --conf spark.dynamicAllocation.enabled=true pyspark-shell""" 
 
         from pyspark.sql import SparkSession
@@ -184,11 +165,7 @@ with DAG(
             .option("delimiter", ";") \
             .save(output_data)
 
-    # [END transform_function]
-
-    # [START load_function]
     def load(**kwargs):
-        ######################## Correct ###########################
         with os.scandir('/Users/leandroarruda/Codes/UdacityCapstone/data/processed/') as it:
             for entry in it:
                 if entry.name.endswith(".csv") and entry.is_file():
@@ -200,8 +177,6 @@ with DAG(
                     bucket_name = 'udacity-data-lake'
                     upload_file(file_name=filename, bucket=bucket_name, object_name=destination)
 
-    # [END load_function]
-
     # [START main_flow]
     extract_task = PythonOperator(
         task_id='extract',
@@ -211,8 +186,6 @@ with DAG(
         """\
     #### Extract task
     A simple Extract task to get data ready for the rest of the data pipeline.
-    In this case, getting data is simulated by reading from a hardcoded JSON string.
-    This data is then put into xcom, so that it can be processed by the next task.
     """
     )
 
@@ -223,9 +196,8 @@ with DAG(
     transform_task.doc_md = dedent(
         """\
     #### Transform task
-    A simple Transform task which takes in the collection of order data from xcom
-    and computes the total order value.
-    This computed value is then put into xcom, so that it can be processed by the next task.
+    A simple Transform task which takes in the collection of order data from csv files, normalizes,
+    standardize, and creates date fields.
     """
     )
 
@@ -237,17 +209,12 @@ with DAG(
         """\
     #### Load task
     A simple Load task which takes in the result of the Transform task, by reading it
-    from xcom and instead of saving it to end user review, just prints it out.
+    from data/processed directory and copying to s3://udacity-capstone/covid19/landing.
     """
     )
 
+    #
+    # Tasks ordering
+    #
+
     extract_task >> transform_task >> load_task
-
-# [END main_flow]
-
-# [END tutorial]
-
-# if __name__ == '__main__':
-#     from airflow.utils.state import State
-#     dag.clear(dag_run_state=State.NONE)
-#     dag.run()
